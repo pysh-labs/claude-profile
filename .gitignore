@@ -1,0 +1,15 @@
+# Binaries
+/claude-profile
+/dist/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+
+# Coverage
+*.out
+coverage.html
