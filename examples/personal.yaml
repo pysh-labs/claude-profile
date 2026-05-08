@@ -1,0 +1,16 @@
+apiVersion: claude-profile.io/v1
+kind: Profile
+metadata:
+  name: personal
+  description: Personal profile with community plugins
+statusline:
+  label: personal
+  color: green
+marketplaces:
+  claude-plugins-official:
+    type: github
+    repo: anthropics/claude-plugins-official
+plugins:
+  - superpowers@claude-plugins-official
+claude_md: |
+  Personal projects.

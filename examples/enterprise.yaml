@@ -1,0 +1,17 @@
+apiVersion: claude-profile.io/v1
+kind: Profile
+metadata:
+  name: enterprise
+  description: Enterprise team profile with Atlassian
+statusline:
+  label: work
+  color: red
+marketplaces:
+  claude-plugins-official:
+    type: github
+    repo: anthropics/claude-plugins-official
+plugins:
+  - atlassian@claude-plugins-official
+claude_md: |
+  Branch prefix: feature/, bugfix/, hotfix/.
+  Always include ticket number.
