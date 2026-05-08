@@ -40,6 +40,11 @@ func newNewCmd() *cobra.Command {
 			if err := spec.Interpolate(p); err != nil {
 				return err
 			}
+			originalName := p.Metadata.Name
+			p.Metadata.Name = name
+			if p.Statusline.Label == originalName {
+				p.Statusline.Label = name
+			}
 			home, err := os.UserHomeDir()
 			if err != nil {
 				return err

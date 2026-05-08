@@ -108,6 +108,56 @@ func TestNewCmd_PrintsActivationHint_NotYetActivated(t *testing.T) {
 	require.Contains(t, got, ".zshrc")
 }
 
+func TestNewCmd_OverridesIdentityFromCLIArg(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	bin := buildFakeClaudeForCLI(t)
+	t.Setenv("PATH", filepath.Dir(bin)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("FAKE_CLAUDE_LOG", filepath.Join(t.TempDir(), "calls.log"))
+
+	cmd := newRootCmd("test")
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"new", "paynomicpay", "-t", "personal"})
+	require.NoError(t, cmd.Execute())
+
+	lockRaw, err := os.ReadFile(filepath.Join(home, ".claude-paynomicpay", "profile.lock.json"))
+	require.NoError(t, err)
+	require.Contains(t, string(lockRaw), `"name": "paynomicpay"`)
+	require.Contains(t, string(lockRaw), `"label": "paynomicpay"`)
+	require.NotContains(t, string(lockRaw), `"name": "personal"`)
+}
+
+func TestNewCmd_PreservesExplicitLabel(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	bin := buildFakeClaudeForCLI(t)
+	t.Setenv("PATH", filepath.Dir(bin)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("FAKE_CLAUDE_LOG", filepath.Join(t.TempDir(), "calls.log"))
+
+	specPath := filepath.Join(t.TempDir(), "p.yaml")
+	require.NoError(t, os.WriteFile(specPath, []byte(`apiVersion: claude-profile.io/v1
+kind: Profile
+metadata: {name: acme}
+statusline: {label: prod, color: red}
+`), 0644))
+
+	cmd := newRootCmd("test")
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"new", "acme-prod", "-f", specPath})
+	require.NoError(t, cmd.Execute())
+
+	lockRaw, err := os.ReadFile(filepath.Join(home, ".claude-acme-prod", "profile.lock.json"))
+	require.NoError(t, err)
+	require.Contains(t, string(lockRaw), `"name": "acme-prod"`)
+	require.Contains(t, string(lockRaw), `"label": "prod"`)
+}
+
 func TestNewCmd_PrintsActivationHint_AlreadyActivated(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
