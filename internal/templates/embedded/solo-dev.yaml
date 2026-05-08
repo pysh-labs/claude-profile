@@ -1,0 +1,16 @@
+apiVersion: claude-profile.io/v1
+kind: Profile
+metadata:
+  name: solo-dev
+  description: Solo developer with productivity plugins
+statusline:
+  label: solo
+  color: cyan
+marketplaces:
+  claude-plugins-official:
+    type: github
+    repo: anthropics/claude-plugins-official
+plugins:
+  - superpowers@claude-plugins-official
+claude_md: |
+  Default solo-developer rules.
