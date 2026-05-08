@@ -1,0 +1,9 @@
+apiVersion: claude-profile.io/v1
+kind: Profile
+
+metadata:
+  name: minimal
+
+statusline:
+  label: minimal
+  color: green

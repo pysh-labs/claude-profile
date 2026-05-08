@@ -1,0 +1,32 @@
+apiVersion: claude-profile.io/v1
+kind: Profile
+
+metadata:
+  name: personal
+  description: Personal profile
+
+statusline:
+  label: personal
+  color: green
+
+marketplaces:
+  claude-plugins-official:
+    type: github
+    repo: anthropics/claude-plugins-official
+
+plugins:
+  - atlassian@claude-plugins-official
+  - superpowers@claude-plugins-official
+
+mcp_servers:
+  atlassian:
+    command: docker
+    args: [run, -i, --rm, mcp/atlassian]
+    env:
+      USER_NAME: dmitri
+
+settings_overrides:
+  skipDangerousModePermissionPrompt: true
+
+claude_md: |
+  Branch prefix: feature/, bugfix/, hotfix/.
