@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -18,13 +19,27 @@ func newRootCmd(v string) *cobra.Command {
 		SilenceErrors: true,
 	}
 	cmd.SetVersionTemplate("claude-profile {{.Version}}\n")
-	cmd.AddCommand(newStatuslineCmd())
+	cmd.AddCommand(
+		newStatuslineCmd(),
+		newInitCmd(),
+		newListCmd(),
+		newCurrentCmd(),
+		newWhichCmd(),
+		newTemplatesCmd(),
+		newShellInitCmd(),
+	)
 	return cmd
 }
 
 func main() {
-	if err := newRootCmd(version).Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	err := newRootCmd(version).Execute()
+	if err == nil {
+		return
 	}
+	var pf *PartialFailureError
+	if errors.As(err, &pf) {
+		os.Exit(3)
+	}
+	fmt.Fprintln(os.Stderr, err)
+	os.Exit(1)
 }
