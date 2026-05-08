@@ -85,3 +85,49 @@ func TestNewCmd_FromTemplate(t *testing.T) {
 
 	require.DirExists(t, filepath.Join(home, ".claude-p"))
 }
+
+func TestNewCmd_PrintsActivationHint_NotYetActivated(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("SHELL", "/bin/zsh")
+
+	bin := buildFakeClaudeForCLI(t)
+	t.Setenv("PATH", filepath.Dir(bin)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("FAKE_CLAUDE_LOG", filepath.Join(t.TempDir(), "calls.log"))
+
+	cmd := newRootCmd("test")
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"new", "p", "-t", "personal"})
+	require.NoError(t, cmd.Execute())
+
+	got := out.String()
+	require.Contains(t, got, "Launch with: claude-p")
+	require.Contains(t, got, `eval "$(claude-profile init zsh)"`)
+	require.Contains(t, got, ".zshrc")
+}
+
+func TestNewCmd_PrintsActivationHint_AlreadyActivated(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("SHELL", "/bin/zsh")
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".zshrc"),
+		[]byte(`eval "$(claude-profile init zsh)"`+"\n"), 0644))
+
+	bin := buildFakeClaudeForCLI(t)
+	t.Setenv("PATH", filepath.Dir(bin)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("FAKE_CLAUDE_LOG", filepath.Join(t.TempDir(), "calls.log"))
+
+	cmd := newRootCmd("test")
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"new", "p", "-t", "personal"})
+	require.NoError(t, cmd.Execute())
+
+	got := out.String()
+	require.Contains(t, got, "Launch with: claude-p")
+	require.NotContains(t, got, "Persist for new shells")
+	require.Contains(t, got, "open a new shell")
+}

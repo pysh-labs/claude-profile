@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/dmitriipyshinskii/claude-profile/internal/plugin"
 	"github.com/dmitriipyshinskii/claude-profile/internal/render"
@@ -111,6 +112,7 @@ func newNewCmd() *cobra.Command {
 				}
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "✓ Profile %q ready.\n", name)
+			printActivationHint(cmd.OutOrStdout(), name)
 			return nil
 		},
 	}
@@ -118,6 +120,48 @@ func newNewCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&fromTemplate, "template", "t", "", "Embedded template name")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print plan without writing")
 	return cmd
+}
+
+func printActivationHint(out io.Writer, profileName string) {
+	shellName, rc := detectShellAndRC()
+	alias := "claude-" + profileName
+
+	if rcAlreadyActivated(rc) {
+		fmt.Fprintf(out, "\nLaunch with: %s\n", alias)
+		fmt.Fprintf(out, "(open a new shell or run `eval \"$(claude-profile init %s)\"` to refresh aliases)\n", shellName)
+		return
+	}
+
+	loadCmd := fmt.Sprintf(`eval "$(claude-profile init %s)"`, shellName)
+	if shellName == "fish" {
+		loadCmd = "claude-profile init fish | source"
+	}
+	persistCmd := fmt.Sprintf(`echo '%s' >> %s`, loadCmd, rc)
+
+	fmt.Fprintf(out, "\nLaunch with: %s\n", alias)
+	fmt.Fprintf(out, "Activate aliases in this shell:\n  %s\n", loadCmd)
+	fmt.Fprintf(out, "Persist for new shells:\n  %s\n", persistCmd)
+}
+
+func detectShellAndRC() (string, string) {
+	home, _ := os.UserHomeDir()
+	base := filepath.Base(os.Getenv("SHELL"))
+	switch base {
+	case "bash":
+		return "bash", filepath.Join(home, ".bashrc")
+	case "fish":
+		return "fish", filepath.Join(home, ".config", "fish", "config.fish")
+	default:
+		return "zsh", filepath.Join(home, ".zshrc")
+	}
+}
+
+func rcAlreadyActivated(rc string) bool {
+	data, err := os.ReadFile(rc)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), "claude-profile init")
 }
 
 func loadSpec(file, tmpl string) ([]byte, error) {

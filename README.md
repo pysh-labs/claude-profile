@@ -14,14 +14,15 @@ Claude Code natively has three configuration layers — user, project, project-l
 # Install (from source for now)
 go install github.com/dmitriipyshinskii/claude-profile/cmd/claude-profile@latest
 
-# Activate shell integration (one-time setup; persist by appending to ~/.zshrc)
-eval "$(claude-profile init zsh)"
-
 # Bootstrap a profile from an embedded template
 claude-profile new personal -t personal
+# → output ends with the exact `eval` and `>> ~/.zshrc` lines you need
 
-# Reload aliases so the new profile is available
+# Activate the alias for this shell
 eval "$(claude-profile init zsh)"
+
+# Persist for new shells
+echo 'eval "$(claude-profile init zsh)"' >> ~/.zshrc
 
 # Launch Claude Code in the new profile
 claude-personal
