@@ -23,6 +23,7 @@ func newRootCmd(v string) *cobra.Command {
 		newStatuslineCmd(),
 		newInitCmd(),
 		newNewCmd(),
+		newUseCmd(),
 		newListCmd(),
 		newCurrentCmd(),
 		newWhichCmd(),

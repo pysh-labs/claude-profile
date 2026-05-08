@@ -24,9 +24,18 @@ eval "$(claude-profile init zsh)"
 # Persist for new shells
 echo 'eval "$(claude-profile init zsh)"' >> ~/.zshrc
 
-# Launch Claude Code in the new profile
+# Launch Claude Code in the new profile (one-shot)
 claude-personal
+
+# …or switch the whole shell to that profile and use plain `claude`
+claude-profile use personal
+claude
 ```
+
+Two ways to use a profile:
+
+- **Per-invocation alias** `claude-<name>` — runs Claude Code once with that profile, doesn't touch the shell. Different terminals can run different profiles in parallel.
+- **Session switch** `claude-profile use <name>` — exports `CLAUDE_CONFIG_DIR` for the rest of the shell session, so plain `claude` (and any subsequent commands) use the chosen profile until you `use` another or close the shell.
 
 ## Example `profile.yaml`
 
@@ -73,6 +82,7 @@ claude_md: |
 ```
 claude-profile init <shell>                                       # activate shell integration (zsh|bash|fish)
 claude-profile new  <name> [-f profile.yaml | -t <template>] [--dry-run]
+claude-profile use  <name>                                        # switch active profile in current shell
 claude-profile list  [--all] [--json]
 claude-profile current
 claude-profile which <name>

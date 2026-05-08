@@ -14,7 +14,10 @@ func newInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init <shell>",
 		Short: "Activate shell integration (prints aliases for sourcing)",
-		Long: `Activate shell integration: prints aliases for switching profiles.
+		Long: `Activate shell integration. Prints two things:
+  - per-profile aliases (claude-X) for one-shot invocations
+  - a wrapper for "claude-profile use <name>" that exports
+    CLAUDE_CONFIG_DIR for the rest of the shell session
 
 Supported shells: zsh, bash, fish.
 

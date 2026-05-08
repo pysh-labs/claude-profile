@@ -37,3 +37,22 @@ func TestGenerate_UnknownShell(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "powershell")
 }
+
+func TestGenerate_PosixIncludesUseFunction(t *testing.T) {
+	for _, sh := range []string{"zsh", "bash"} {
+		got, err := Generate(sh, nil)
+		require.NoError(t, err)
+		require.Contains(t, got, "claude-profile() {", "shell %s", sh)
+		require.Contains(t, got, `if [ "$1" = "use" ]`, "shell %s", sh)
+		require.Contains(t, got, "command claude-profile which", "shell %s", sh)
+		require.Contains(t, got, "export CLAUDE_CONFIG_DIR=", "shell %s", sh)
+	}
+}
+
+func TestGenerate_FishIncludesUseFunction(t *testing.T) {
+	got, err := Generate("fish", nil)
+	require.NoError(t, err)
+	require.Contains(t, got, "function claude-profile")
+	require.Contains(t, got, `test "$argv[1]" = "use"`)
+	require.Contains(t, got, "set -gx CLAUDE_CONFIG_DIR")
+}
