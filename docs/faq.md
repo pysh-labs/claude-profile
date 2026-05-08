@@ -26,15 +26,15 @@ rm -rf ~/.claude-<name>
 `claude-profile` does not provide a `delete` subcommand in v0.1 to keep the destructive surface area zero. After removal, regenerate aliases:
 
 ```bash
-eval "$(claude-profile shell-init zsh)"
+eval "$(claude-profile init zsh)"
 ```
 
 ## How do I remove a plugin?
 
-`claude-profile init` is purely additive — removing a plugin from yaml does not uninstall it. Either:
+`claude-profile new` is purely additive — removing a plugin from yaml does not uninstall it. Either:
 
 1. Run `claude /plugin uninstall <name>` inside the profile, or
-2. Delete the profile directory and re-init.
+2. Delete the profile directory and re-create it.
 
 ## Where do secrets go?
 

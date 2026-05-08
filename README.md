@@ -6,7 +6,7 @@
 
 Claude Code natively has three configuration layers — user, project, project-local. There is no **organization layer**. If you work across multiple orgs on one machine, each with its own plugins, MCP servers, branch rules, and statusline conventions, you end up either logging in and out, manually editing `~/.claude/`, or running shell aliases without any reproducibility.
 
-`claude-profile` fills that gap. A single declarative `profile.yaml` describes everything an org needs; `claude-profile init` bootstraps an isolated `~/.claude-<name>/` from it. The yaml is small enough to commit to your team repo — onboarding becomes one command.
+`claude-profile` fills that gap. A single declarative `profile.yaml` describes everything an org needs; `claude-profile new` bootstraps an isolated `~/.claude-<name>/` from it. The yaml is small enough to commit to your team repo — onboarding becomes one command.
 
 ## Quickstart
 
@@ -14,11 +14,14 @@ Claude Code natively has three configuration layers — user, project, project-l
 # Install (from source for now)
 go install github.com/dmitriipyshinskii/claude-profile/cmd/claude-profile@latest
 
-# Bootstrap a profile from an embedded template
-claude-profile init personal -t personal
+# Activate shell integration (one-time setup; persist by appending to ~/.zshrc)
+eval "$(claude-profile init zsh)"
 
-# Generate shell aliases for all profiles
-eval "$(claude-profile shell-init zsh)"
+# Bootstrap a profile from an embedded template
+claude-profile new personal -t personal
+
+# Reload aliases so the new profile is available
+eval "$(claude-profile init zsh)"
 
 # Launch Claude Code in the new profile
 claude-personal
@@ -49,7 +52,7 @@ claude_md: |
   Branch prefix: feature/, bugfix/, hotfix/.
 ```
 
-`claude-profile init personal -f profile.yaml` produces `~/.claude-personal/` with `settings.json`, `CLAUDE.md`, `profile.lock.json`, and the plugins installed.
+`claude-profile new personal -f profile.yaml` produces `~/.claude-personal/` with `settings.json`, `CLAUDE.md`, `profile.lock.json`, and the plugins installed.
 
 ## Comparison
 
@@ -67,13 +70,13 @@ claude_md: |
 ## CLI
 
 ```
-claude-profile init <name> [-f profile.yaml | -t <template>] [--dry-run]
-claude-profile list  [--json]
+claude-profile init <shell>                                       # activate shell integration (zsh|bash|fish)
+claude-profile new  <name> [-f profile.yaml | -t <template>] [--dry-run]
+claude-profile list  [--all] [--json]
 claude-profile current
 claude-profile which <name>
 claude-profile templates
-claude-profile shell-init zsh|bash|fish
-claude-profile statusline       # internal, called by Claude Code
+claude-profile statusline                                         # internal, called by Claude Code
 ```
 
 ## Status

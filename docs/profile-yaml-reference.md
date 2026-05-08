@@ -1,6 +1,6 @@
 # profile.yaml reference
 
-Complete reference for the `profile.yaml` schema consumed by `claude-profile init -f <file>`.
+Complete reference for the `profile.yaml` schema consumed by `claude-profile new -f <file>`.
 
 ## Top-level keys
 

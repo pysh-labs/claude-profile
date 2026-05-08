@@ -22,11 +22,11 @@ func newRootCmd(v string) *cobra.Command {
 	cmd.AddCommand(
 		newStatuslineCmd(),
 		newInitCmd(),
+		newNewCmd(),
 		newListCmd(),
 		newCurrentCmd(),
 		newWhichCmd(),
 		newTemplatesCmd(),
-		newShellInitCmd(),
 	)
 	return cmd
 }
