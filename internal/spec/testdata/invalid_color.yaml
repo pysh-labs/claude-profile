@@ -1,0 +1,4 @@
+apiVersion: claude-profile.io/v1
+kind: Profile
+metadata: {name: bad}
+statusline: {label: bad, color: neon}
