@@ -13,7 +13,7 @@ import (
 )
 
 func newListCmd() *cobra.Command {
-	var asJSON bool
+	var asJSON, all bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List profiles",
@@ -23,6 +23,15 @@ func newListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if !all {
+				kept := profiles[:0]
+				for _, p := range profiles {
+					if p.Name == "default" || p.Managed {
+						kept = append(kept, p)
+					}
+				}
+				profiles = kept
+			}
 			active := profile.Active(home)
 			if asJSON {
 				data, _ := json.MarshalIndent(profiles, "", "  ")
@@ -30,18 +39,31 @@ func newListCmd() *cobra.Command {
 				return nil
 			}
 			tw := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			fmt.Fprintln(tw, "NAME\tPATH\tACTIVE")
+			if all {
+				fmt.Fprintln(tw, "NAME\tPATH\tMANAGED\tACTIVE")
+			} else {
+				fmt.Fprintln(tw, "NAME\tPATH\tACTIVE")
+			}
 			for _, p := range profiles {
 				marker := ""
 				if p.Name == active {
 					marker = "●"
 				}
-				fmt.Fprintf(tw, "%s\t%s\t%s\n", p.Name, p.Path, marker)
+				if all {
+					managed := "no"
+					if p.Managed {
+						managed = "yes"
+					}
+					fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", p.Name, p.Path, managed, marker)
+				} else {
+					fmt.Fprintf(tw, "%s\t%s\t%s\n", p.Name, p.Path, marker)
+				}
 			}
 			return tw.Flush()
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Emit JSON")
+	cmd.Flags().BoolVar(&all, "all", false, "Include unmanaged ~/.claude-* directories")
 	return cmd
 }
 

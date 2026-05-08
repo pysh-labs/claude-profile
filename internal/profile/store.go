@@ -9,10 +9,11 @@ import (
 )
 
 type Profile struct {
-	Name  string `json:"name"`
-	Path  string `json:"path"`
-	Label string `json:"label,omitempty"`
-	Color string `json:"color,omitempty"`
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	Label   string `json:"label,omitempty"`
+	Color   string `json:"color,omitempty"`
+	Managed bool   `json:"managed"`
 }
 
 func Discover(home string) ([]Profile, error) {
@@ -42,6 +43,7 @@ func load(home, dirName, profileName string) Profile {
 	p := Profile{Name: profileName, Path: path}
 	data, err := os.ReadFile(filepath.Join(path, "profile.lock.json"))
 	if err == nil {
+		p.Managed = true
 		var lock struct {
 			Label string `json:"label"`
 			Color string `json:"color"`

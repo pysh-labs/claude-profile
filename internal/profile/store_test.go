@@ -38,6 +38,25 @@ func TestDiscover_ReadsLockFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	require.Equal(t, "green", got[0].Color)
+	require.True(t, got[0].Managed)
+}
+
+func TestDiscover_ManagedFlag(t *testing.T) {
+	home := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude-flow"), 0755))
+	managed := filepath.Join(home, ".claude-work")
+	require.NoError(t, os.MkdirAll(managed, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(managed, "profile.lock.json"), []byte(`{}`), 0644))
+
+	got, err := Discover(home)
+	require.NoError(t, err)
+
+	byName := map[string]Profile{}
+	for _, p := range got {
+		byName[p.Name] = p
+	}
+	require.False(t, byName["flow"].Managed)
+	require.True(t, byName["work"].Managed)
 }
 
 func TestActive_FromConfigDir(t *testing.T) {
