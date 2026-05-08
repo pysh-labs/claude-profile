@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/dmitriipyshinskii/claude-profile/internal/profile"
+	"github.com/dmitriipyshinskii/claude-profile/internal/tcolor"
 	"github.com/dmitriipyshinskii/claude-profile/internal/templates"
 	"github.com/spf13/cobra"
 )
@@ -38,16 +41,20 @@ func newListCmd() *cobra.Command {
 				fmt.Fprintln(cmd.OutOrStdout(), string(data))
 				return nil
 			}
-			tw := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+			out := cmd.OutOrStdout()
+			var buf bytes.Buffer
+			tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
 			if all {
 				fmt.Fprintln(tw, "NAME\tPATH\tMANAGED\tACTIVE")
 			} else {
 				fmt.Fprintln(tw, "NAME\tPATH\tACTIVE")
 			}
+			activeColor := ""
 			for _, p := range profiles {
 				marker := ""
 				if p.Name == active {
 					marker = "●"
+					activeColor = p.Color
 				}
 				if all {
 					managed := "no"
@@ -59,7 +66,15 @@ func newListCmd() *cobra.Command {
 					fmt.Fprintf(tw, "%s\t%s\t%s\n", p.Name, p.Path, marker)
 				}
 			}
-			return tw.Flush()
+			if err := tw.Flush(); err != nil {
+				return err
+			}
+			rendered := buf.String()
+			if tcolor.Enabled(out) {
+				rendered = strings.Replace(rendered, "●", tcolor.WrapName(out, activeColor, "●"), 1)
+			}
+			fmt.Fprint(out, rendered)
+			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Emit JSON")
@@ -78,7 +93,18 @@ func newCurrentCmd() *cobra.Command {
 			if active != "default" {
 				path = filepath.Join(home, ".claude-"+active)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s (%s)\n", active, path)
+			color := ""
+			if profiles, err := profile.Discover(home); err == nil {
+				for _, p := range profiles {
+					if p.Name == active {
+						color = p.Color
+						break
+					}
+				}
+			}
+			out := cmd.OutOrStdout()
+			dot := tcolor.WrapName(out, color, "●")
+			fmt.Fprintf(out, "%s %s (%s)\n", dot, active, path)
 			return nil
 		},
 	}

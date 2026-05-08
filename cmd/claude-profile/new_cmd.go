@@ -11,9 +11,13 @@ import (
 	"github.com/dmitriipyshinskii/claude-profile/internal/plugin"
 	"github.com/dmitriipyshinskii/claude-profile/internal/render"
 	"github.com/dmitriipyshinskii/claude-profile/internal/spec"
+	"github.com/dmitriipyshinskii/claude-profile/internal/tcolor"
 	"github.com/dmitriipyshinskii/claude-profile/internal/templates"
 	"github.com/spf13/cobra"
 )
+
+func okMark(w io.Writer) string   { return tcolor.Wrap(w, tcolor.Green, "✓") }
+func failMark(w io.Writer) string { return tcolor.Wrap(w, tcolor.Red, "✗") }
 
 func newNewCmd() *cobra.Command {
 	var fromFile, fromTemplate string
@@ -75,20 +79,22 @@ func newNewCmd() *cobra.Command {
 				for _, f := range mfails {
 					mfailed[f.Source] = f.Stderr
 				}
+				out := cmd.OutOrStdout()
 				for _, src := range sources {
 					if msg, bad := mfailed[src]; bad {
-						fmt.Fprintf(cmd.OutOrStdout(), "  ✗ %s (%s)\n      stderr: %s\n", labels[src], src, msg)
+						fmt.Fprintf(out, "  %s %s (%s)\n      stderr: %s\n", failMark(out), labels[src], src, msg)
 					} else {
-						fmt.Fprintf(cmd.OutOrStdout(), "  ✓ %s (%s)\n", labels[src], src)
+						fmt.Fprintf(out, "  %s %s (%s)\n", okMark(out), labels[src], src)
 					}
 				}
 				if len(mfails) > 0 {
-					fmt.Fprintf(cmd.OutOrStdout(), "✗ %d of %d marketplace adds failed.\n", len(mfails), len(sources))
+					fmt.Fprintf(out, "%s %d of %d marketplace adds failed.\n", failMark(out), len(mfails), len(sources))
 					return &PartialFailureError{Failed: len(mfails), Total: len(sources)}
 				}
 			}
 			if len(p.Plugins) > 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "Installing %d plugins via claude CLI...\n", len(p.Plugins))
+				out := cmd.OutOrStdout()
+				fmt.Fprintf(out, "Installing %d plugins via claude CLI...\n", len(p.Plugins))
 				failures, err := plugin.Install(target, p.Plugins)
 				if err != nil {
 					return err
@@ -97,21 +103,21 @@ func newNewCmd() *cobra.Command {
 					failed := false
 					for _, f := range failures {
 						if f.Plugin == pl {
-							fmt.Fprintf(cmd.OutOrStdout(), "  ✗ %s\n      stderr: %s\n", pl, f.Stderr)
+							fmt.Fprintf(out, "  %s %s\n      stderr: %s\n", failMark(out), pl, f.Stderr)
 							failed = true
 							break
 						}
 					}
 					if !failed {
-						fmt.Fprintf(cmd.OutOrStdout(), "  ✓ %s\n", pl)
+						fmt.Fprintf(out, "  %s %s\n", okMark(out), pl)
 					}
 				}
 				if len(failures) > 0 {
-					fmt.Fprintf(cmd.OutOrStdout(), "✗ %d of %d plugin installs failed.\n", len(failures), len(p.Plugins))
+					fmt.Fprintf(out, "%s %d of %d plugin installs failed.\n", failMark(out), len(failures), len(p.Plugins))
 					return &PartialFailureError{Failed: len(failures), Total: len(p.Plugins)}
 				}
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "✓ Profile %q ready.\n", name)
+			fmt.Fprintf(cmd.OutOrStdout(), "%s Profile %q ready.\n", okMark(cmd.OutOrStdout()), name)
 			printActivationHint(cmd.OutOrStdout(), name)
 			return nil
 		},
@@ -182,7 +188,7 @@ func writeOwnedFiles(p *spec.Profile, target string, out io.Writer) error {
 	if err := render.WriteAtomic(filepath.Join(target, "settings.json"), settings); err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "✓ Wrote settings.json")
+	fmt.Fprintln(out, okMark(out), "Wrote settings.json")
 
 	if mcp, ok, err := render.RenderMCP(p); err != nil {
 		return err
@@ -190,14 +196,14 @@ func writeOwnedFiles(p *spec.Profile, target string, out io.Writer) error {
 		if err := render.WriteAtomic(filepath.Join(target, ".mcp.json"), mcp); err != nil {
 			return err
 		}
-		fmt.Fprintln(out, "✓ Wrote .mcp.json")
+		fmt.Fprintln(out, okMark(out), "Wrote .mcp.json")
 	}
 
 	if md, ok := render.RenderClaudeMD(p); ok {
 		if err := render.WriteAtomic(filepath.Join(target, "CLAUDE.md"), md); err != nil {
 			return err
 		}
-		fmt.Fprintln(out, "✓ Wrote CLAUDE.md")
+		fmt.Fprintln(out, okMark(out), "Wrote CLAUDE.md")
 	}
 
 	lock, err := render.RenderLock(p)
@@ -207,6 +213,6 @@ func writeOwnedFiles(p *spec.Profile, target string, out io.Writer) error {
 	if err := render.WriteAtomic(filepath.Join(target, "profile.lock.json"), lock); err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "✓ Wrote profile.lock.json")
+	fmt.Fprintln(out, okMark(out), "Wrote profile.lock.json")
 	return nil
 }
