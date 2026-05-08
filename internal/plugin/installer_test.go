@@ -52,3 +52,33 @@ func TestInstall_PartialFailure(t *testing.T) {
 	require.Equal(t, "FAIL", failed[0].Plugin)
 	require.Contains(t, failed[0].Stderr, "simulated failure")
 }
+
+func TestAddMarketplaces_AllSucceed(t *testing.T) {
+	bin := buildFakeClaude(t)
+	t.Setenv("PATH", filepath.Dir(bin)+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	logFile := filepath.Join(t.TempDir(), "calls.log")
+	t.Setenv("FAKE_CLAUDE_LOG", logFile)
+
+	failed, err := AddMarketplaces("/tmp/fake-cfg", []string{"owner/repo1", "owner/repo2"})
+	require.NoError(t, err)
+	require.Empty(t, failed)
+
+	data, _ := os.ReadFile(logFile)
+	calls := strings.Split(strings.TrimSpace(string(data)), "\n")
+	require.Len(t, calls, 2)
+	require.Equal(t, "plugin marketplace add owner/repo1", calls[0])
+	require.Equal(t, "plugin marketplace add owner/repo2", calls[1])
+}
+
+func TestAddMarketplaces_PartialFailure(t *testing.T) {
+	bin := buildFakeClaude(t)
+	t.Setenv("PATH", filepath.Dir(bin)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("FAKE_CLAUDE_LOG", filepath.Join(t.TempDir(), "calls.log"))
+
+	failed, err := AddMarketplaces("/tmp/fake-cfg", []string{"owner/ok", "FAIL", "owner/ok2"})
+	require.NoError(t, err)
+	require.Len(t, failed, 1)
+	require.Equal(t, "FAIL", failed[0].Source)
+	require.Contains(t, failed[0].Stderr, "simulated failure")
+}

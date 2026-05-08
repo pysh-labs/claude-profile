@@ -17,6 +17,11 @@ type Failure struct {
 	Stderr string
 }
 
+type MarketplaceFailure struct {
+	Source string
+	Stderr string
+}
+
 func Install(configDir string, plugins []string) ([]Failure, error) {
 	if _, err := exec.LookPath("claude"); err != nil {
 		return nil, fmt.Errorf("`claude` binary not found in PATH")
@@ -29,6 +34,35 @@ func Install(configDir string, plugins []string) ([]Failure, error) {
 		}
 	}
 	return failures, nil
+}
+
+func AddMarketplaces(configDir string, sources []string) ([]MarketplaceFailure, error) {
+	if _, err := exec.LookPath("claude"); err != nil {
+		return nil, fmt.Errorf("`claude` binary not found in PATH")
+	}
+
+	var failures []MarketplaceFailure
+	for _, src := range sources {
+		if err := addOne(configDir, src); err != nil {
+			failures = append(failures, MarketplaceFailure{Source: src, Stderr: err.Error()})
+		}
+	}
+	return failures, nil
+}
+
+func addOne(configDir, source string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), installTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "claude", "plugin", "marketplace", "add", source)
+	cmd.Env = append(os.Environ(), "CLAUDE_CONFIG_DIR="+configDir)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s", strings.TrimSpace(stderr.String()))
+	}
+	return nil
 }
 
 func one(configDir, plugin string) error {

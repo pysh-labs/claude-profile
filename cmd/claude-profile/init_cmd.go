@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/dmitriipyshinskii/claude-profile/internal/plugin"
 	"github.com/dmitriipyshinskii/claude-profile/internal/render"
@@ -50,6 +51,40 @@ func newInitCmd() *cobra.Command {
 			}
 			if err := writeOwnedFiles(p, target, cmd.OutOrStdout()); err != nil {
 				return err
+			}
+			if len(p.Marketplaces) > 0 {
+				names := make([]string, 0, len(p.Marketplaces))
+				for n := range p.Marketplaces {
+					names = append(names, n)
+				}
+				sort.Strings(names)
+				sources := make([]string, 0, len(names))
+				labels := make(map[string]string, len(names))
+				for _, n := range names {
+					src := p.Marketplaces[n].Repo
+					sources = append(sources, src)
+					labels[src] = n
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Adding %d marketplace(s) via claude CLI...\n", len(sources))
+				mfails, err := plugin.AddMarketplaces(target, sources)
+				if err != nil {
+					return err
+				}
+				mfailed := map[string]string{}
+				for _, f := range mfails {
+					mfailed[f.Source] = f.Stderr
+				}
+				for _, src := range sources {
+					if msg, bad := mfailed[src]; bad {
+						fmt.Fprintf(cmd.OutOrStdout(), "  ✗ %s (%s)\n      stderr: %s\n", labels[src], src, msg)
+					} else {
+						fmt.Fprintf(cmd.OutOrStdout(), "  ✓ %s (%s)\n", labels[src], src)
+					}
+				}
+				if len(mfails) > 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "✗ %d of %d marketplace adds failed.\n", len(mfails), len(sources))
+					return &PartialFailureError{Failed: len(mfails), Total: len(sources)}
+				}
 			}
 			if len(p.Plugins) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Installing %d plugins via claude CLI...\n", len(p.Plugins))

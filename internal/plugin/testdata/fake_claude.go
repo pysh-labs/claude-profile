@@ -9,9 +9,11 @@ import (
 )
 
 func main() {
-	if len(os.Args) >= 2 && os.Args[1] == "FAIL" {
-		fmt.Fprintln(os.Stderr, "simulated failure")
-		os.Exit(1)
+	for _, a := range os.Args[1:] {
+		if a == "FAIL" {
+			fmt.Fprintln(os.Stderr, "simulated failure")
+			os.Exit(1)
+		}
 	}
 	logPath := os.Getenv("FAKE_CLAUDE_LOG")
 	if logPath == "" {
