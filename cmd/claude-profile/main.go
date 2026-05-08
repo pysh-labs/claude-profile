@@ -11,11 +11,14 @@ var version = "dev"
 
 func newRootCmd(v string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "claude-profile",
-		Short:   "Profile-as-code for Claude Code",
-		Version: v,
+		Use:           "claude-profile",
+		Short:         "Profile-as-code for Claude Code",
+		Version:       v,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 	cmd.SetVersionTemplate("claude-profile {{.Version}}\n")
+	cmd.AddCommand(newStatuslineCmd())
 	return cmd
 }
 
