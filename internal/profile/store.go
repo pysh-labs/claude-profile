@@ -5,8 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+var safeNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+
+// SafeName reports whether name is a syntactically valid profile name:
+// it must start with an alphanumeric and contain only [A-Za-z0-9_-].
+func SafeName(name string) bool {
+	return safeNamePattern.MatchString(name)
+}
 
 type Profile struct {
 	Name    string `json:"name"`
@@ -17,6 +26,9 @@ type Profile struct {
 }
 
 func Discover(home string) ([]Profile, error) {
+	if home == "" {
+		return nil, fmt.Errorf("home directory not set")
+	}
 	entries, err := os.ReadDir(home)
 	if err != nil {
 		return nil, fmt.Errorf("read home: %w", err)
@@ -32,7 +44,11 @@ func Discover(home string) ([]Profile, error) {
 			continue
 		}
 		if strings.HasPrefix(name, ".claude-") {
-			out = append(out, load(home, name, strings.TrimPrefix(name, ".claude-")))
+			profileName := strings.TrimPrefix(name, ".claude-")
+			if !safeNamePattern.MatchString(profileName) {
+				continue
+			}
+			out = append(out, load(home, name, profileName))
 		}
 	}
 	return out, nil

@@ -15,7 +15,7 @@ func TestRender_FullInputWithProfile(t *testing.T) {
 		ModelName:  "Opus 4.7",
 		ContextPct: 42,
 	}
-	p := ProfileMeta{Name: "personal", Label: "personal", Color: "green"}
+	p := ProfileMeta{Label: "personal", Color: "green"}
 
 	got := Render(in, p)
 	require.Contains(t, got, "[personal]")

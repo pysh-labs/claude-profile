@@ -1,12 +1,14 @@
 package statusline
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type stdinPayload struct {
@@ -48,7 +50,11 @@ func gitBranch(dir string) string {
 	if dir == "" {
 		return ""
 	}
-	cmd := exec.Command("git", "-C", dir, "-c", "core.fsmonitor=false", "symbolic-ref", "--short", "HEAD")
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "-C", dir, "-c", "core.fsmonitor=false", "symbolic-ref", "--short", "HEAD")
+	cmd.Stderr = io.Discard
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
 	out, err := cmd.Output()
 	if err != nil {
 		return ""

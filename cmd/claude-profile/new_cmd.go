@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/dmitriipyshinskii/claude-profile/internal/plugin"
+	"github.com/dmitriipyshinskii/claude-profile/internal/profile"
 	"github.com/dmitriipyshinskii/claude-profile/internal/render"
 	"github.com/dmitriipyshinskii/claude-profile/internal/spec"
 	"github.com/dmitriipyshinskii/claude-profile/internal/tcolor"
@@ -29,6 +30,9 @@ func newNewCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
+			if !profile.SafeName(name) {
+				return fmt.Errorf("invalid profile name %q: must start with a letter or digit and contain only [A-Za-z0-9_-]", name)
+			}
 			data, err := loadSpec(fromFile, fromTemplate)
 			if err != nil {
 				return err
@@ -56,7 +60,7 @@ func newNewCmd() *cobra.Command {
 				return nil
 			}
 
-			if err := os.MkdirAll(target, 0755); err != nil {
+			if err := os.MkdirAll(target, 0o700); err != nil {
 				return err
 			}
 			if err := writeOwnedFiles(p, target, cmd.OutOrStdout()); err != nil {
@@ -130,6 +134,8 @@ func newNewCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&fromFile, "file", "f", "", "Path to profile.yaml")
 	cmd.Flags().StringVarP(&fromTemplate, "template", "t", "", "Embedded template name")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print plan without writing")
+	cmd.MarkFlagsMutuallyExclusive("file", "template")
+	cmd.MarkFlagsOneRequired("file", "template")
 	return cmd
 }
 
@@ -172,7 +178,16 @@ func rcAlreadyActivated(rc string) bool {
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(data), "claude-profile init")
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if strings.Contains(trimmed, "claude-profile init") {
+			return true
+		}
+	}
+	return false
 }
 
 func loadSpec(file, tmpl string) ([]byte, error) {
@@ -190,7 +205,7 @@ func writeOwnedFiles(p *spec.Profile, target string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if err := render.WriteAtomic(filepath.Join(target, "settings.json"), settings); err != nil {
+	if err := render.WriteAtomicSecret(filepath.Join(target, "settings.json"), settings); err != nil {
 		return err
 	}
 	fmt.Fprintln(out, okMark(out), "Wrote settings.json")
@@ -198,7 +213,7 @@ func writeOwnedFiles(p *spec.Profile, target string, out io.Writer) error {
 	if mcp, ok, err := render.RenderMCP(p); err != nil {
 		return err
 	} else if ok {
-		if err := render.WriteAtomic(filepath.Join(target, ".mcp.json"), mcp); err != nil {
+		if err := render.WriteAtomicSecret(filepath.Join(target, ".mcp.json"), mcp); err != nil {
 			return err
 		}
 		fmt.Fprintln(out, okMark(out), "Wrote .mcp.json")
@@ -215,7 +230,7 @@ func writeOwnedFiles(p *spec.Profile, target string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if err := render.WriteAtomic(filepath.Join(target, "profile.lock.json"), lock); err != nil {
+	if err := render.WriteAtomicSecret(filepath.Join(target, "profile.lock.json"), lock); err != nil {
 		return err
 	}
 	fmt.Fprintln(out, okMark(out), "Wrote profile.lock.json")

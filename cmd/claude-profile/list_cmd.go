@@ -21,21 +21,24 @@ func newListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List profiles",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			home, _ := os.UserHomeDir()
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("locate home directory: %w", err)
+			}
 			profiles, err := profile.Discover(home)
 			if err != nil {
 				return err
 			}
+			active := profile.Active(home)
 			if !all {
 				kept := profiles[:0]
 				for _, p := range profiles {
-					if p.Name == "default" || p.Managed {
+					if p.Name == "default" || p.Managed || p.Name == active {
 						kept = append(kept, p)
 					}
 				}
 				profiles = kept
 			}
-			active := profile.Active(home)
 			if asJSON {
 				data, _ := json.MarshalIndent(profiles, "", "  ")
 				fmt.Fprintln(cmd.OutOrStdout(), string(data))
@@ -87,7 +90,10 @@ func newCurrentCmd() *cobra.Command {
 		Use:   "current",
 		Short: "Show active profile",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			home, _ := os.UserHomeDir()
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("locate home directory: %w", err)
+			}
 			active := profile.Active(home)
 			path := filepath.Join(home, ".claude")
 			if active != "default" {
@@ -116,7 +122,10 @@ func newWhichCmd() *cobra.Command {
 		Short: "Print config dir path",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			home, _ := os.UserHomeDir()
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("locate home directory: %w", err)
+			}
 			name := args[0]
 			path := filepath.Join(home, ".claude")
 			if name != "default" {

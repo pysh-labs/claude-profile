@@ -14,7 +14,6 @@ type Input struct {
 }
 
 type ProfileMeta struct {
-	Name  string `json:"name"`
 	Label string `json:"label"`
 	Color string `json:"color"`
 }

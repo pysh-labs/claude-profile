@@ -20,23 +20,22 @@ func Interpolate(p *Profile) error {
 	sort.Strings(serverNames)
 
 	for _, name := range serverNames {
-		srv := p.MCPServers[name]
-		envKeys := make([]string, 0, len(srv.Env))
-		for k := range srv.Env {
+		env := p.MCPServers[name].Env
+		envKeys := make([]string, 0, len(env))
+		for k := range env {
 			envKeys = append(envKeys, k)
 		}
 		sort.Strings(envKeys)
 
 		for _, k := range envKeys {
-			expanded, err := expand(srv.Env[k])
+			expanded, err := expand(env[k])
 			if err != nil {
 				errs = append(errs,
 					fmt.Sprintf("mcp_servers.%s.env.%s: %s", name, k, err.Error()))
 				continue
 			}
-			srv.Env[k] = expanded
+			env[k] = expanded
 		}
-		p.MCPServers[name] = srv
 	}
 
 	if len(errs) > 0 {
@@ -57,7 +56,15 @@ func expand(s string) (string, error) {
 		return val
 	})
 	if len(missing) > 0 {
-		return "", fmt.Errorf("environment variable %s is not set", missing[0])
+		seen := map[string]bool{}
+		uniq := missing[:0]
+		for _, m := range missing {
+			if !seen[m] {
+				seen[m] = true
+				uniq = append(uniq, m)
+			}
+		}
+		return "", fmt.Errorf("environment variables not set: %s", strings.Join(uniq, ", "))
 	}
 	return out, nil
 }

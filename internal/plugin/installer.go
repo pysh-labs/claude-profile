@@ -51,36 +51,36 @@ func AddMarketplaces(configDir string, sources []string) ([]MarketplaceFailure, 
 }
 
 func addOne(configDir, source string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), installTimeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, "claude", "plugin", "marketplace", "add", source)
-	cmd.Env = append(os.Environ(), "CLAUDE_CONFIG_DIR="+configDir)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s", strings.TrimSpace(stderr.String()))
-	}
-	return nil
+	return runClaude(configDir, "plugin", "marketplace", "add", source)
 }
 
 func one(configDir, plugin string) error {
+	return runClaude(configDir, "plugin", "install", plugin)
+}
+
+func runClaude(configDir string, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), installTimeout)
 	defer cancel()
 
-	args := []string{"plugin", "install", plugin}
-	if plugin == "FAIL" {
-		args = []string{"FAIL"}
-	}
-
 	cmd := exec.CommandContext(ctx, "claude", args...)
 	cmd.Env = append(os.Environ(), "CLAUDE_CONFIG_DIR="+configDir)
-	var stderr bytes.Buffer
+	var stderr, stdout bytes.Buffer
 	cmd.Stderr = &stderr
+	cmd.Stdout = &stdout
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s", strings.TrimSpace(stderr.String()))
+	err := cmd.Run()
+	if err == nil {
+		return nil
 	}
-	return nil
+	if ctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("timed out after %s", installTimeout)
+	}
+	msg := strings.TrimSpace(stderr.String())
+	if msg == "" {
+		msg = strings.TrimSpace(stdout.String())
+	}
+	if msg == "" {
+		return err
+	}
+	return fmt.Errorf("%s", msg)
 }

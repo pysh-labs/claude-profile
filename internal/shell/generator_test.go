@@ -14,22 +14,29 @@ func TestGenerate_Zsh(t *testing.T) {
 	}
 	got, err := Generate("zsh", profiles)
 	require.NoError(t, err)
-	require.Contains(t, got, `alias claude-default='CLAUDE_CONFIG_DIR=/Users/me/.claude claude'`)
-	require.Contains(t, got, `alias claude-personal='CLAUDE_CONFIG_DIR=/Users/me/.claude-personal claude'`)
+	require.Contains(t, got, `alias claude-default='CLAUDE_CONFIG_DIR='\''/Users/me/.claude'\'' claude'`)
+	require.Contains(t, got, `alias claude-personal='CLAUDE_CONFIG_DIR='\''/Users/me/.claude-personal'\'' claude'`)
 }
 
 func TestGenerate_Bash(t *testing.T) {
 	profiles := []profile.Profile{{Name: "x", Path: "/p"}}
 	got, err := Generate("bash", profiles)
 	require.NoError(t, err)
-	require.Contains(t, got, `alias claude-x='CLAUDE_CONFIG_DIR=/p claude'`)
+	require.Contains(t, got, `alias claude-x='CLAUDE_CONFIG_DIR='\''/p'\'' claude'`)
+}
+
+func TestGenerate_Bash_PathWithSpaces(t *testing.T) {
+	profiles := []profile.Profile{{Name: "x", Path: "/Users/Foo Bar/.claude-x"}}
+	got, err := Generate("bash", profiles)
+	require.NoError(t, err)
+	require.Contains(t, got, `alias claude-x='CLAUDE_CONFIG_DIR='\''/Users/Foo Bar/.claude-x'\'' claude'`)
 }
 
 func TestGenerate_Fish(t *testing.T) {
 	profiles := []profile.Profile{{Name: "x", Path: "/p"}}
 	got, err := Generate("fish", profiles)
 	require.NoError(t, err)
-	require.Contains(t, got, `alias claude-x "CLAUDE_CONFIG_DIR=/p claude"`)
+	require.Contains(t, got, `alias claude-x 'CLAUDE_CONFIG_DIR=\'/p\' claude'`)
 }
 
 func TestGenerate_UnknownShell(t *testing.T) {

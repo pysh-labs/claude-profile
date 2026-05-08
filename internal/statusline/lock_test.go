@@ -17,7 +17,6 @@ func TestLoadProfileMeta_ValidLock(t *testing.T) {
 	))
 
 	p := LoadProfileMeta(dir)
-	require.Equal(t, "personal", p.Name)
 	require.Equal(t, "personal", p.Label)
 	require.Equal(t, "green", p.Color)
 }

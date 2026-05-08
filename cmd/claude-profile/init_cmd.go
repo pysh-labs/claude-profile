@@ -29,7 +29,7 @@ are skipped to avoid clobbering their commands. Use --all to include them.`,
 
   # persist in your shell config
   echo 'eval "$(claude-profile init zsh)"' >> ~/.zshrc`,
-		Args:      cobra.ExactArgs(1),
+		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		ValidArgs: []string{"zsh", "bash", "fish"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			home, _ := os.UserHomeDir()

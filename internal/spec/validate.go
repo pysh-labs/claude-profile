@@ -8,7 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var pluginFormat = regexp.MustCompile(`^[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+$`)
+var pluginFormat = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*@[A-Za-z0-9][A-Za-z0-9_.-]*$`)
 
 func Validate(p *Profile) error {
 	v := validator.New()
